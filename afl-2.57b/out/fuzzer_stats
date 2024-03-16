@@ -1,0 +1,30 @@
+start_time        : 1708493642
+last_update       : 1708494572
+fuzzer_pid        : 6679
+cycles_done       : 0
+execs_done        : 34
+execs_per_sec     : 0.00
+paths_total       : 2
+paths_favored     : 1
+paths_found       : 0
+paths_imported    : 0
+max_depth         : 2
+cur_path          : 0
+pending_favs      : 1
+pending_total     : 2
+variable_paths    : 0
+stability         : 100.00%
+bitmap_cvg        : 0.03%
+unique_crashes    : 0
+unique_hangs      : 0
+last_path         : 1708494544
+last_crash        : 0
+last_hang         : 0
+execs_since_crash : 34
+exec_timeout      : 20
+afl_banner        : makeup_main
+afl_version       : 2.57b
+target_mode       : default
+command_line      : /home/killuayz/aflgo/afl-2.57b/afl-fuzz -m none -z exp -c 45m -i /home/killuayz/aflgo/afl-2.57b/in -o /home/killuayz/aflgo/afl-2.57b/out /home/killuayz/aflgo/afl-2.57b/makeup_main @@
+slowest_exec_ms   : 2
+peak_rss_mb       : not available while afl is running

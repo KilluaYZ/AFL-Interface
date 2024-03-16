@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/AFL_Monitor.dir/main.cpp.o -o AFL_Monitor  /usr/local/lib/oatpp-1.3.0/liboatpp.a -latomic 
