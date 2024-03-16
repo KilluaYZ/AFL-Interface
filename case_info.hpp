@@ -1,5 +1,7 @@
 #ifndef CASE_INFO_HPP
 #define CASE_INFO_HPP
+#include <stdexcept>
+#include <unistd.h>
 namespace case_info {
     // fuzzer运行状态
     const unsigned char RUNNING = 1;        //正在运行: 当fuzzer检测到status为此状态时，会继续进行fuzz操作
@@ -17,6 +19,9 @@ namespace case_info {
     const unsigned char REARRANGE_QUEUE = 2;    //重排种子顺序
     const unsigned char PAUSE_FUZZER = 3;       //暂停fuzz
     const unsigned char RESUME_FUZZER = 4;      //恢复fuzz
+
+    const int MAX_TRY_TIMES = 100;
+    const double SLEEP_INTERVAL = 0.1;
 
     struct queue_entry{
         // 种子文件名
@@ -71,6 +76,38 @@ namespace case_info {
         unsigned int arranged_idx[MAX_QUEUE_LEN];
     };
 
-    
+    void op_pause_fuzzer(CaseInfo* case_info){
+        int cnt = 0;
+        while(cnt <= MAX_TRY_TIMES){
+            if(case_info->status != case_info::INTERRUPT){
+                break;
+            }else{
+                sleep(case_info::SLEEP_INTERVAL);
+            }
+            cnt++;
+            if(cnt > MAX_TRY_TIMES){
+                throw std::runtime_error("pause fuzzer failed");
+            }
+        }
+        case_info->status = case_info::PAUSE;
+    }
+
+    void op_resume_fuzzer(CaseInfo* case_info){
+        int cnt = 0;
+        while(cnt <= MAX_TRY_TIMES){
+            if(case_info->status != case_info::INTERRUPT){
+                break;
+            }else{
+                sleep(case_info::SLEEP_INTERVAL);
+            }
+            cnt++;
+            if(cnt > MAX_TRY_TIMES){
+                throw std::runtime_error("resume fuzzer failed");
+            }
+        }
+        case_info->status = case_info::READY;
+    }
+
+
 };
 #endif
