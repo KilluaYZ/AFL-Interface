@@ -1,5 +1,4 @@
 #include "controller/TestController.hpp"
-#include "dto/TestMsgDto.hpp"
 
 #include "oatpp/web/server/HttpConnectionHandler.hpp"
 
@@ -8,8 +7,8 @@
 
 void run(){
     auto objectMapper = oatpp::parser::json::mapping::ObjectMapper::createShared();
-    auto router = oatpp::web::server::HttpRouter::createSHared();
-    router->route("GET", "/hello", std::make_shared<Handler>(objectMapper /* json object mapper */ ));
+    auto router = oatpp::web::server::HttpRouter::createShared();
+    router->route("GET", "/hello", std::make_shared<TestHandler>(objectMapper /* json object mapper */ ));
 
   /* Create HTTP connection handler with router */
   auto connectionHandler = oatpp::web::server::HttpConnectionHandler::createShared(router);

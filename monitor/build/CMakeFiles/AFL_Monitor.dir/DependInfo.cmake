@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/killuayz/AFL-Interface/monitor/main.cpp" "CMakeFiles/AFL_Monitor.dir/main.cpp.o" "gcc" "CMakeFiles/AFL_Monitor.dir/main.cpp.o.d"
+  "/home/killuayz/AFL-Interface/monitor/src/App.cpp" "CMakeFiles/AFL_Monitor.dir/src/App.cpp.o" "gcc" "CMakeFiles/AFL_Monitor.dir/src/App.cpp.o.d"
   )
 
 # Targets to which this target links.

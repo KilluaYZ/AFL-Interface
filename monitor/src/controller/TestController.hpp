@@ -2,8 +2,9 @@
 #define TEST_CONTROLLER_HPP
 
 #include "oatpp/web/server/HttpConnectionHandler.hpp"
-#include "oatpp/networkServer.hpp"
+#include "oatpp/network/Server.hpp"
 #include "oatpp/network/tcp/server/ConnectionProvider.hpp"
+#include "../dto/MsgDto.hpp"
 
 class TestHandler : public oatpp::web::server::HttpRequestHandler {
 private:
@@ -18,6 +19,6 @@ public:
         message->message = "Hello ! ";
         return ResponseFactory::createResponse(Status::CODE_200, message, m_objectMapper);
     }
-}
+};
 
 #endif 

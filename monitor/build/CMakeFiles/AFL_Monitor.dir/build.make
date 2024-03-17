@@ -69,28 +69,28 @@ include CMakeFiles/AFL_Monitor.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/AFL_Monitor.dir/flags.make
 
-CMakeFiles/AFL_Monitor.dir/main.cpp.o: CMakeFiles/AFL_Monitor.dir/flags.make
-CMakeFiles/AFL_Monitor.dir/main.cpp.o: ../main.cpp
-CMakeFiles/AFL_Monitor.dir/main.cpp.o: CMakeFiles/AFL_Monitor.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/killuayz/AFL-Interface/monitor/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/AFL_Monitor.dir/main.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/AFL_Monitor.dir/main.cpp.o -MF CMakeFiles/AFL_Monitor.dir/main.cpp.o.d -o CMakeFiles/AFL_Monitor.dir/main.cpp.o -c /home/killuayz/AFL-Interface/monitor/main.cpp
+CMakeFiles/AFL_Monitor.dir/src/App.cpp.o: CMakeFiles/AFL_Monitor.dir/flags.make
+CMakeFiles/AFL_Monitor.dir/src/App.cpp.o: ../src/App.cpp
+CMakeFiles/AFL_Monitor.dir/src/App.cpp.o: CMakeFiles/AFL_Monitor.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/killuayz/AFL-Interface/monitor/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/AFL_Monitor.dir/src/App.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/AFL_Monitor.dir/src/App.cpp.o -MF CMakeFiles/AFL_Monitor.dir/src/App.cpp.o.d -o CMakeFiles/AFL_Monitor.dir/src/App.cpp.o -c /home/killuayz/AFL-Interface/monitor/src/App.cpp
 
-CMakeFiles/AFL_Monitor.dir/main.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/AFL_Monitor.dir/main.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/killuayz/AFL-Interface/monitor/main.cpp > CMakeFiles/AFL_Monitor.dir/main.cpp.i
+CMakeFiles/AFL_Monitor.dir/src/App.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/AFL_Monitor.dir/src/App.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/killuayz/AFL-Interface/monitor/src/App.cpp > CMakeFiles/AFL_Monitor.dir/src/App.cpp.i
 
-CMakeFiles/AFL_Monitor.dir/main.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/AFL_Monitor.dir/main.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/killuayz/AFL-Interface/monitor/main.cpp -o CMakeFiles/AFL_Monitor.dir/main.cpp.s
+CMakeFiles/AFL_Monitor.dir/src/App.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/AFL_Monitor.dir/src/App.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/killuayz/AFL-Interface/monitor/src/App.cpp -o CMakeFiles/AFL_Monitor.dir/src/App.cpp.s
 
 # Object files for target AFL_Monitor
 AFL_Monitor_OBJECTS = \
-"CMakeFiles/AFL_Monitor.dir/main.cpp.o"
+"CMakeFiles/AFL_Monitor.dir/src/App.cpp.o"
 
 # External object files for target AFL_Monitor
 AFL_Monitor_EXTERNAL_OBJECTS =
 
-AFL_Monitor: CMakeFiles/AFL_Monitor.dir/main.cpp.o
+AFL_Monitor: CMakeFiles/AFL_Monitor.dir/src/App.cpp.o
 AFL_Monitor: CMakeFiles/AFL_Monitor.dir/build.make
 AFL_Monitor: /usr/local/lib/oatpp-1.3.0/liboatpp.a
 AFL_Monitor: CMakeFiles/AFL_Monitor.dir/link.txt
