@@ -4,39 +4,42 @@
 
 #include "oatpp/network/Server.hpp"
 #include "oatpp/network/tcp/server/ConnectionProvider.hpp"
+#include "controller/Controller.hpp"
+#include "FuzzerManager/FuzzerManager.hpp"
 
 void run(){
     auto objectMapper = oatpp::parser::json::mapping::ObjectMapper::createShared();
     auto router = oatpp::web::server::HttpRouter::createShared();
-    router->route("GET", "/hello", std::make_shared<TestHandler>(objectMapper /* json object mapper */ ));
+    auto fuzzer_manager = new FuzzerManager();
+    router->route("GET", "/hello", std::make_shared<TestHandler>(objectMapper ));
+    router->route("POST", "/add", std::make_shared<AddFuzzerHandler>(objectMapper, fuzzer_manager));
+    router->route("POST", "/pause", std::make_shared<PauseFuzzHandler>(objectMapper, fuzzer_manager));
+    router->route("POST", "/resume", std::make_shared<ResumeFuzzHandler>(objectMapper, fuzzer_manager));
 
-  /* Create HTTP connection handler with router */
-  auto connectionHandler = oatpp::web::server::HttpConnectionHandler::createShared(router);
+    /* Create HTTP connection handler with router */
+    auto connectionHandler = oatpp::web::server::HttpConnectionHandler::createShared(router);
 
-  /* Create TCP connection provider */
-  auto connectionProvider = oatpp::network::tcp::server::ConnectionProvider::createShared({"localhost", 8000, oatpp::network::Address::IP_4});
+    /* Create TCP connection provider */
+    auto connectionProvider = oatpp::network::tcp::server::ConnectionProvider::createShared({"localhost", 8000, oatpp::network::Address::IP_4});
 
-  /* Create server which takes provided TCP connections and passes them to HTTP connection handler */
-  oatpp::network::Server server(connectionProvider, connectionHandler);
+    /* Create server which takes provided TCP connections and passes them to HTTP connection handler */
+    oatpp::network::Server server(connectionProvider, connectionHandler);
 
-  /* Priny info about server port */
-  OATPP_LOGI("MyApp", "Server running on port %s", connectionProvider->getProperty("port").getData());
+    /* Priny info about server port */
+    OATPP_LOGI("MyApp", "Server running on port %s", connectionProvider->getProperty("port").getData());
 
-  /* Run server */
-  server.run();
+    /* Run server */
+    server.run();
 }
 
 int main() {
+    /* Init oatpp Environment */
+    oatpp::base::Environment::init();
+    /* Run App */
+    run();
 
-  /* Init oatpp Environment */
-  oatpp::base::Environment::init();
+    /* Destroy oatpp Environment */
+    oatpp::base::Environment::destroy();
 
-  /* Run App */
-  run();
-
-  /* Destroy oatpp Environment */
-  oatpp::base::Environment::destroy();
-
-  return 0;
-
+    return 0;
 }

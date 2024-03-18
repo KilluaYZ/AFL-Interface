@@ -29,7 +29,7 @@ namespace case_info {
 
     
     const int MAX_TRY_TIMES = 100;
-    const double SLEEP_INTERVAL = 0.1;
+    const int SLEEP_INTERVAL_US = 100;         //100us = 0.1ms
 
     struct queue_entry{
         // 种子文件名
@@ -87,11 +87,11 @@ namespace case_info {
     //一些工具函数
     void sleep_with_condition(bool condition){
         int cnt = 0;
-        while(cnt <= MAX_TRY_TIMES){
+        while(true){
             if(condition){
                 return;
             }else{
-                sleep(case_info::SLEEP_INTERVAL);
+                usleep(case_info::SLEEP_INTERVAL_US);
             }
             cnt++;
             if(cnt > MAX_TRY_TIMES){
@@ -104,7 +104,7 @@ namespace case_info {
     void op_resume_fuzzer(CaseInfo* case_info){
         try{
             sleep_with_condition(case_info->status != case_info::fuzzer_status::INTERRUPT);
-        }catch(std::runtime_error e){
+        }catch(std::runtime_error& e){
             return;
         }
         case_info->status = case_info::fuzzer_status::INTERRUPT;
@@ -114,7 +114,7 @@ namespace case_info {
     void op_pause_fuzzer(CaseInfo* case_info){
         try{
             sleep_with_condition(case_info->status != case_info::fuzzer_status::INTERRUPT);
-        }catch(std::runtime_error e){
+        }catch(std::runtime_error& e){
             return;
         }
         case_info->status = case_info::fuzzer_status::INTERRUPT;

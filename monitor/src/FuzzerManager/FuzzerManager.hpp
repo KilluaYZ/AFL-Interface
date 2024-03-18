@@ -12,14 +12,14 @@
 
 class FuzzerManager{
 private:
-    std::unordered_map<std::string, Fuzzer> fuzzers;
+    std::unordered_map<std::string, Fuzzer*> fuzzers;
 public:
     FuzzerManager();
     ~FuzzerManager();
-    void add_fuzzer(Fuzzer fuzzer);
-    void add_fuzzer(std::string fuzzer_id, std::string shared_file_path);
-    Fuzzer get_fuzzer(std::string fuzzer_id);
-    void FuzzerManager::remove_fuzzer(std::unordered_map<std::string, Fuzzer>::iterator it);
+    void add_fuzzer(Fuzzer* fuzzer);
+    Fuzzer* add_fuzzer(std::string fuzzer_id, std::string shared_file_path);
+    Fuzzer* get_fuzzer(std::string fuzzer_id);
+    void remove_fuzzer(std::unordered_map<std::string, Fuzzer*>::iterator it);
     void remove_fuzzer(std::string fuzzer_id);
     void clear_all_fuzzer();
 };
