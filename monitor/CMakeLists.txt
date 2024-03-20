@@ -10,11 +10,8 @@ set(SOURCE_FILES
         src/utils/case_info.hpp
         src/utils/json.hpp
         src/controller/Controller.hpp
-        src/utils/case_info.cpp
         src/FuzzerManager/Fuzzer.hpp
-        src/FuzzerManager/Fuzzer.cpp
         src/FuzzerManager/FuzzerManager.hpp
-        src/FuzzerManager/FuzzerManager.cpp
 )
 #find_package(nolhmann_json REQUIRED)
 find_package(oatpp REQUIRED)

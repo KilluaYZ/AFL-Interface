@@ -30,6 +30,7 @@ public:
             ss << std::string(*request_body_str);
             ss >> body_json;
             std::string fuzzer_id = nlohmann::to_string(body_json.at("fuzzer_id"));
+            fuzzer_id = fuzzer_id.substr(1, fuzzer_id.size() - 2);
             this->m_fuzzerManager->get_fuzzer(fuzzer_id)->pause();
             message->statusCode = 200;
             message->message = "pause success";
@@ -66,6 +67,7 @@ public:
             ss << std::string(*request_body_str);
             ss >> body_json;
             std::string fuzzer_id = nlohmann::to_string(body_json.at("fuzzer_id"));
+            fuzzer_id = fuzzer_id.substr(1, fuzzer_id.size() - 2);
             this->m_fuzzerManager->get_fuzzer(fuzzer_id)->resume();
             message->statusCode = 200;
             message->message = "resume success";

@@ -15,8 +15,8 @@ void sys_err(char* s){
 int main(){
     int fd;
     case_info::CaseInfo* mm;
-    if((fd = open("tmpfile", O_RDWR| O_CREAT | O_TRUNC)) < 0){
-        sys_err("open tmpfile failed");
+    if((fd = open(".case_info_file", O_RDWR| O_CREAT | O_TRUNC)) < 0){
+        sys_err("open case_info_file failed");
     }
     ftruncate(fd, sizeof(case_info::CaseInfo));
     mm = (case_info::CaseInfo*)mmap(NULL, sizeof(case_info::CaseInfo), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
