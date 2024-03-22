@@ -2,6 +2,7 @@
 #define CASE_INFO_HPP
 #include <stdexcept>
 #include <unistd.h>
+#include "json.hpp"
 namespace case_info {
     typedef const unsigned char status_t;
     typedef const unsigned char op_type_t;
@@ -83,6 +84,18 @@ namespace case_info {
         // 操作后的种子下标idx数组
         unsigned int arranged_idx[MAX_QUEUE_LEN];
     };
+
+    std::string dumps(CaseInfo* case_info){
+
+    }
+
+    void loads(CaseInfo* case_info, std::string case_info_str){
+
+    }
+
+    void copy(CaseInfo* a, CaseInfo* b){
+
+    }
 
     //一些工具函数
     void sleep_with_condition(bool condition){

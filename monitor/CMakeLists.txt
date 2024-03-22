@@ -12,8 +12,8 @@ set(SOURCE_FILES
         src/controller/Controller.hpp
         src/FuzzerManager/Fuzzer.hpp
         src/FuzzerManager/FuzzerManager.hpp
+        src/utils/mjson.h
 )
-#find_package(nolhmann_json REQUIRED)
 find_package(oatpp REQUIRED)
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} oatpp::oatpp)
