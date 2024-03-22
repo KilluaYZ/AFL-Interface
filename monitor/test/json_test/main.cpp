@@ -6,7 +6,7 @@
 #include <string>
 #include <iostream>
 using json = nlohmann::json;
-#include "../../src/utils/mjson.h"
+#include "../../src/utils/mjson.hpp"
 using namespace std;
 int main(){
     std::string s = "{\"name\": \"zy\", \"age\": 123}";

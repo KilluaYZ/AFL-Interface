@@ -12,7 +12,7 @@ set(SOURCE_FILES
         src/controller/Controller.hpp
         src/FuzzerManager/Fuzzer.hpp
         src/FuzzerManager/FuzzerManager.hpp
-        src/utils/mjson.h
+        src/utils/mjson.hpp
 )
 find_package(oatpp REQUIRED)
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})

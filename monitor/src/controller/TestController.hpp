@@ -18,6 +18,7 @@ public:
     TestHandler(const std::shared_ptr<oatpp::data::mapping::ObjectMapper>& objectMapper) : m_objectMapper(objectMapper) {}
 
     std::shared_ptr<OutgoingResponse> handle(const std::shared_ptr<IncomingRequest>& request) override {
+        OATPP_LOGI("AFL_MONITOR", "visiting /hello");
         auto message = MessageDto::createShared();
         auto request_body_str = request->readBodyToString();
         std::cout<<"[DEBUG] request body: "<<request_body_str->c_str()<<std::endl;

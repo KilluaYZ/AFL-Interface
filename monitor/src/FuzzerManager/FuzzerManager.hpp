@@ -5,6 +5,7 @@
 */
 #ifndef FUZZER_MANAGER_HPP
 #define FUZZER_MANAGER_HPP
+#include <utility>
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -31,19 +32,19 @@ public:
     }
 
     Fuzzer* add_fuzzer(std::string fuzzer_id, std::string shared_file_path){
-        auto fuzzer = new Fuzzer(fuzzer_id, shared_file_path);
+        auto fuzzer = new Fuzzer(std::move(fuzzer_id), std::move(shared_file_path));
         this->add_fuzzer(fuzzer);
         return fuzzer;
     }
 
-    Fuzzer* get_fuzzer(std::string fuzzer_id){
+    Fuzzer* get_fuzzer(const std::string& fuzzer_id){
         if(this->fuzzers.find(fuzzer_id) == this->fuzzers.end()){
             throw std::runtime_error("Fuzzer with id " + fuzzer_id + " not existed!");
         }
         return this->fuzzers[fuzzer_id];
     }
 
-    void remove_fuzzer(std::string fuzzer_id){
+    void remove_fuzzer(const std::string& fuzzer_id){
         auto it = this->fuzzers.find(fuzzer_id);
         if(it != this->fuzzers.end()){
             it->second->disconnect();

@@ -15,6 +15,8 @@ void run(){
     router->route("POST", "/add", std::make_shared<AddFuzzerHandler>(objectMapper, fuzzer_manager));
     router->route("POST", "/pause", std::make_shared<PauseFuzzHandler>(objectMapper, fuzzer_manager));
     router->route("POST", "/resume", std::make_shared<ResumeFuzzHandler>(objectMapper, fuzzer_manager));
+    router->route("POST", "/list", std::make_shared<ListQueueHandler>(objectMapper, fuzzer_manager));
+    router->route("POST", "/arrange", std::make_shared<ArrangeQueueHandler>(objectMapper, fuzzer_manager));
 
     /* Create HTTP connection handler with router */
     auto connectionHandler = oatpp::web::server::HttpConnectionHandler::createShared(router);
@@ -26,7 +28,7 @@ void run(){
     oatpp::network::Server server(connectionProvider, connectionHandler);
 
     /* Priny info about server port */
-    OATPP_LOGI("MyApp", "Server running on port %s", connectionProvider->getProperty("port").getData());
+    OATPP_LOGI("AFL_MONITOR", "Server running on port %s", connectionProvider->getProperty("port").getData());
 
     /* Run server */
     server.run();
