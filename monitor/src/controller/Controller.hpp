@@ -5,7 +5,6 @@
 #include "oatpp/network/Server.hpp"
 #include "oatpp/network/tcp/server/ConnectionProvider.hpp"
 #include "../dto/MsgDto.hpp"
-#include "../utils/case_info.hpp"
 #include "../FuzzerManager/FuzzerManager.hpp"
 #include <iostream>
 #include <sstream>

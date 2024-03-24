@@ -27,7 +27,6 @@
    how they affect the execution path.
 
 */
-
 #define AFL_MAIN
 #include "android-ashmem.h"
 #define MESSAGES_TO_STDOUT
@@ -67,11 +66,15 @@
 #include <sys/ioctl.h>
 #include <sys/file.h>
 
-FILE *ccdl_fp = NULL;
 
 #if AFLGO_IMPL
 #  include <math.h>
 #endif // AFLGO_IMPL
+
+#if CODE_CHECK_IMPL
+#include "case_info.h"
+FILE *ccdl_fp = NULL;
+#endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined (__OpenBSD__)
 #  include <sys/sysctl.h>
@@ -364,6 +367,47 @@ enum {
   /* 04 */ FAULT_NOINST,
   /* 05 */ FAULT_NOBITS
 };
+
+#if CODE_CHECK_IMPL
+struct CaseInfo *case_info_mm;
+void init_case_info_mmap_link(){
+    int fd;
+    if((fd = open(".case_info_file", O_RDWR| O_CREAT | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO)) < 0){
+        FATAL("open case_info_file failed");
+    }
+    ftruncate(fd, sizeof(struct CaseInfo));
+    case_info_mm = (struct CaseInfo*)mmap(NULL, sizeof(struct CaseInfo), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if(case_info_mm == MAP_FAILED){
+        FATAL("mmap failed");
+    }
+    close(fd);
+    case_info_mm->status = RUNNING;
+}
+
+void write_to_case_info_mm(){
+    struct queue_entry* p = queue;
+    int i = 0;
+    while(p){
+        struct case_info_queue_entry* tmp = case_info_mm->queue+i;
+        strcpy(tmp->fname, p->fname);
+        tmp->len = p->len;
+        tmp->cal_failed = p->cal_failed;
+        tmp->trim_done = p->trim_done;
+        tmp->was_fuzzed = p->was_fuzzed;
+        tmp->passed_det = p->passed_det;
+        tmp->has_new_cov = p->has_new_cov;
+        tmp->favored = p->favored;
+        tmp->fs_redundant = p->fs_redundant;
+        tmp->exec_us = p->exec_us;
+        tmp->handicap = p->handicap;
+        tmp->depth = p->depth;
+        tmp->distance = p->distance;
+        i++;
+        p = p->next;
+    }
+    case_info_mm->queue_len = i;
+}
+#endif
 
 
 /* Get unix time in milliseconds */
@@ -841,7 +885,10 @@ static void add_to_queue(u8* fname, u32 len, u8 passed_det) {
 
   }
 
+#if CODE_CHECK_IMPL
   fprintf(ccdl_fp, "%s @ %lf @ %lf\n", q->fname, q->distance, (q->distance - min_distance) / (max_distance - min_distance));
+#endif
+
 #endif // AFLGO_IMPL
 
   if (q->depth > max_depth) max_depth = q->depth;
@@ -4762,6 +4809,36 @@ abort_trimming:
 
 EXP_ST u8 common_fuzz_stuff(char** argv, u8* out_buf, u32 len) {
 
+#if CODE_CHECK_IMPL
+    while(1){
+        if(case_info_mm->status == READY){
+            case_info_mm->status = RUNNING;
+            continue;
+        }else if(case_info_mm->status == RUNNING){
+            break;
+        }else if(case_info_mm->status == INTERRUPT){
+            if(case_info_mm->op == PAUSE_FUZZER){
+                case_info_mm->status = PAUSE;
+            }else if(case_info_mm->op == RESUME_FUZZER){
+                case_info_mm->status = READY;
+            }else if(case_info_mm->op == REFRESH_QUEUE){
+                write_to_case_info_mm();
+                case_info_mm->status = TASK_FINISHED;
+            }else if(case_info_mm->op == REARRANGE_QUEUE){
+                case_info_mm->status = TASK_FINISHED;
+            }
+            continue;
+        }else if(case_info_mm->status == TASK_FINISHED){
+            // once the task is finished, fuzzer will back to work immediatly
+            case_info_mm->status = READY;
+            continue;
+        }else if(case_info_mm->status == PAUSE){
+            usleep(100);
+            continue;
+        }
+    }
+#endif
+
   u8 fault;
 
   if (post_handler) {
@@ -4970,7 +5047,6 @@ static u32 calculate_score(struct queue_entry* q) {
     }// else WARNF ("Normalized distance negative: %f", normalized_d);
 
   }
-  //fprintf(ccdl_fp, "%s @ %lf [2]\n", q->fname, q->distance);
   perf_score *= power_factor;
 
 #endif // AFLGO_IMPL
@@ -4981,14 +5057,14 @@ static u32 calculate_score(struct queue_entry* q) {
 
 #if AFLGO_IMPL
   /* AFLGO-DEBUGGING */
-  fprintf(stderr, "[Time %llu] "
-                  "q->distance: %4lf, "
-                  "max_distance: %4lf, "
-                  "min_distance: %4lf, "
-                  "T: %4.3lf, "
-                  "power_factor: %4.3lf, "
-                  "adjusted perf_score: %4d\n",
-    t, q->distance, max_distance, min_distance, T, power_factor, perf_score);
+//  fprintf(stderr, "[Time %llu] "
+//                  "q->distance: %4lf, "
+//                  "max_distance: %4lf, "
+//                  "min_distance: %4lf, "
+//                  "T: %4.3lf, "
+//                  "power_factor: %4.3lf, "
+//                  "adjusted perf_score: %4d\n",
+//    t, q->distance, max_distance, min_distance, T, power_factor, perf_score);
 #endif // AFLGO_IMPL
 
   return perf_score;
@@ -7993,7 +8069,11 @@ int main(int argc, char** argv) {
 
   struct timeval tv;
   struct timezone tz;
+
+#if CODE_CHECK_IMPL
   ccdl_fp = fopen("./ccdl_distance_out.txt","w");
+  init_case_info_mmap_link();
+#endif
 
 #if AFLGO_IMPL
   SAYF(cCYA "aflgo (yeah!) " cBRI VERSION cRST "\n");
@@ -8344,9 +8424,10 @@ int main(int argc, char** argv) {
 
   while (1) {
 
+    cull_queue();
+
     u8 skipped_fuzz;
 
-    cull_queue();
 
     if (!queue_cur) {
 
@@ -8441,8 +8522,10 @@ stop_fuzzing:
   ck_free(sync_id);
 
   alloc_report();
-
+#if CODE_CHECK_IMPL
   fclose(ccdl_fp);
+#endif
+
   OKF("We're done here. Have a nice day!\n");
 
   exit(0);
