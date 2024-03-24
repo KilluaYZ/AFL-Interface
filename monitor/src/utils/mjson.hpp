@@ -172,6 +172,10 @@ public:
         return _json_obj.size();
     }
 
+   bool contain(std::string key){
+        return _json_obj.contains(key);
+    }
+
 };
 
 #endif //AFL_MONITOR_MJSON_HPP

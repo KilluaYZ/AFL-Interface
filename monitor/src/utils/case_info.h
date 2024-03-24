@@ -15,13 +15,15 @@ typedef unsigned char op_type_t;
                                     //之后可以将status置为READY，让fuzzer继续运行
                                     //也可以将status置为INTERRUPT，让fuzzer执行下一个任务
 
-#define REFRESH_QUEUE       6
-#define REARRANGE_QUEUE     7
+#define READ_QUEUE          6
+#define WRITE_QUEUE         7
 #define PAUSE_FUZZER        8
 #define RESUME_FUZZER       9
+#define READ_QUEUE_CUR      10
+#define WRITE_QUEUE_CUR     11
 
-#define MAX_QUEUE_LEN       3000
-#define MAX_CASE_FNAME_LEN  512
+#define MAX_QUEUE_LEN       10000
+#define MAX_CASE_FNAME_LEN  2048
 #define MAX_TRY_TIMES       100
 #define SLEEP_INTERVAL_US   100
 
@@ -55,6 +57,10 @@ struct case_info_queue_entry{
 
     // aflgo计算得出的语法距离
     double distance;
+    // afl计算出的种子分数
+    double perf_score;
+    // 用户手动设定的种子分数
+    double user_set_perf_score;
 };
 
 struct CaseInfo {
@@ -62,20 +68,45 @@ struct CaseInfo {
     unsigned char status;
 
     // queue长度
-    unsigned int queue_len;
+    int queue_len;
 
     // queue数组
     struct case_info_queue_entry queue[MAX_QUEUE_LEN];
 
+    // 当前正在fuzz的种子
+    struct case_info_queue_entry queue_cur;
+
     // 操作类型
     unsigned char op;
 
-    // 我们需要对queue进行排序，所以需要通过数组的形式传给fuzz，
-    // 让其根据arranged_idx数组里的信息进行排序，假设数组信息为[0,5,1,2,3,4]
-    // 意思是将原本第6个放到第2个的位置，剩余的按顺序往后排
-    // 操作后的种子下标idx数组
-    unsigned int arranged_idx[MAX_QUEUE_LEN];
 };
 
+void init_case_info_queue_entry(struct case_info_queue_entry* q){
+    memset(q->fname, 0, MAX_CASE_FNAME_LEN);
+    q->len = 0;
+    q->cal_failed = 0;
+    q->trim_done = 0;
+    q->was_fuzzed = 0;
+    q->passed_det = 0;
+    q->has_new_cov = 0;
+    q->favored = 0;
+    q->fs_redundant = 0;
+    q->exec_us = 0;
+    q->handicap = 0;
+    q->depth = 0;
+    q->distance = 0;
+    q->perf_score = -1;
+    q->user_set_perf_score = -1;
+}
+
+void init_case_info(struct CaseInfo* case_info){
+    case_info->queue_len = 0;
+    case_info->status = RUNNING;
+    case_info->op = READ_QUEUE_CUR;
+    init_case_info_queue_entry(&case_info->queue_cur);
+    for(int i = 0;i < MAX_QUEUE_LEN;i++){
+        init_case_info_queue_entry(&case_info->queue[i]);
+    }
+}
 
 #endif //AFL_MONITOR_CASE_INFO_H

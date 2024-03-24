@@ -89,55 +89,98 @@ public:
         return getOpTypeString(this->case_info);
     }
 
-    mJson to_json(){
-        if(this->case_info == nullptr) throw std::runtime_error("Fuzzer::to_json() case_info is NULL");
+    mJson read_queue(){
+        if(this->case_info == nullptr) throw std::runtime_error("Fuzzer::read_queue() case_info is NULL");
         try{
-            op_refresh_queue(case_info);
+            op_read_queue(case_info);
             sleep_if_status_is_interrupt(case_info, 100000);
         }catch (std::exception& e){
             std::stringstream ss;
-            ss<<"Fuzzer::to_json() reach time limit..."<<e.what()<<std::endl;
+            ss<<"Fuzzer::read_queue() reach time limit..."<<e.what()<<std::endl;
             std::cout<<ss.str()<<std::endl;
             throw std::runtime_error(ss.str());
         }
-        return to_json(case_info);
+        return queue_to_json(case_info);
     }
 
-    void setArrangeIdx(mJson& json_obj){
-        if(this->case_info == nullptr) throw std::runtime_error("Fuzzer::setArrangeIdx() case_info is NULL");
+    mJson read_queue_cur(){
+        if(this->case_info == nullptr) throw std::runtime_error("Fuzzer::read_queue() case_info is NULL");
         try{
-            op_rearrange_queue(this->case_info, json_obj);
-            sleep_if_status_is_interrupt(case_info, 30000000);
+            op_read_queue_cur(case_info);
+            sleep_if_status_is_interrupt(case_info, 100000);
         }catch (std::exception& e){
-            std::stringstream  ss;
-            ss<<"Fuzzer::to_json() reach time limit..."<<std::endl<<e.what()<<std::endl;
+            std::stringstream ss;
+            ss<<"Fuzzer::read_queue() reach time limit..."<<e.what()<<std::endl;
+            std::cout<<ss.str()<<std::endl;
+            throw std::runtime_error(ss.str());
+        }
+        return queue_entry_to_json(&case_info->queue_cur);
+    }
+
+    void write_queue(mJson queue_json){
+        if(this->case_info == nullptr) throw std::runtime_error("Fuzzer::write_queue(mJson) case_info is NULL");
+        try{
+            sleep_if_status_is_interrupt(case_info, 100000);
+            queue_from_json(this->case_info, queue_json);
+            op_write_queue(this->case_info);
+            sleep_if_status_is_interrupt(case_info, 100000);
+        }catch (std::exception& e){
+            std::stringstream ss;
+            ss<<"Fuzzer::write_queue() reach time limit..."<<e.what()<<std::endl;
             std::cout<<ss.str()<<std::endl;
             throw std::runtime_error(ss.str());
         }
     }
 
-    void setArrangeIdx(std::string& json_str){
+    void write_queue(std::string queue_json_str){
         mJson j;
-        j.loads(json_str);
-        setArrangeIdx(j);
+        j.loads(queue_json_str);
+        write_queue(j);
     }
 
-
-    // static method
-    static mJson arranged_idx_to_json(CaseInfo* case_info){
-        mJson jres;
-        for(int i = 0;i < case_info->queue_len; i++){
-            jres.push_backInt(case_info->arranged_idx[i]);
+    void write_queue_cur(mJson queue_cur_json){
+        if(this->case_info == nullptr) throw std::runtime_error("Fuzzer::write_queue_cur(mJson) case_info is NULL");
+        try{
+            // 先检查一遍是否正处于INTERRUPT状态
+            sleep_if_status_is_interrupt(case_info, 100000);
+            // 然后再传输数据
+            queue_entry_from_json(&this->case_info->queue_cur, queue_cur_json);
+            // 数据准备好了就发送指令
+            op_write_queue_cur(this->case_info);
+            // 指令发送完后再检查是否成功执行
+            sleep_if_status_is_interrupt(case_info, 100000);
+        }catch (std::exception& e){
+            std::stringstream ss;
+            ss<<"Fuzzer::write_queue() reach time limit..."<<e.what()<<std::endl;
+            std::cout<<ss.str()<<std::endl;
+            throw std::runtime_error(ss.str());
         }
-        return jres;
     }
 
-    static void arranged_idx_from_json(CaseInfo* case_info, mJson& arranged_idx_json){
-        auto v = arranged_idx_json.getArray();
-        for(int i = 0;i < v.size();i++){
-            case_info->arranged_idx[i] = v[i].getInt();
-        }
+    void write_queue_cur(std::string queue_cur_str){
+        mJson j;
+        j.loads(queue_cur_str);
+        write_queue_cur(j);
     }
+
+    mJson to_json(){
+        if(this->case_info == nullptr) throw std::runtime_error("Fuzzer::to_json() case_info is NULL");
+        mJson res;
+        mJson queue = this->read_queue();
+        mJson queue_cur = this->read_queue_cur();
+        std::string status = getFuzzerStatusString(case_info);
+        std::string op = getOpTypeString(case_info);
+        int queue_len = get_queue_len(case_info);
+        res.putString("status", status);
+        res.putString("op", op);
+        res.putInt("queue_len", queue_len);
+        res.putJson("queue", queue);
+        res.putJson("queue_cur", queue_cur);
+        return res;
+    }
+
+private:
+    // 实际操作的方法
 
     static mJson queue_entry_to_json(case_info_queue_entry* qe){
         mJson j;
@@ -155,28 +198,76 @@ public:
             j.putLongLong("handicap", qe->handicap);
             j.putLongLong("depth", qe->depth);
             j.putDouble("distance", qe->distance);
+            j.putDouble("perf_score", qe->perf_score);
+            j.putDouble("user_set_perf_score", qe->user_set_perf_score);
         }
         return j;
     }
 
     static void queue_entry_from_json(case_info_queue_entry* qe, mJson queue_entry_json){
-        auto tmp_p = queue_entry_json.getString("fname").c_str();
-        auto tmp_size = queue_entry_json.getString("fname").size();
-        strncpy(qe->fname, tmp_p, tmp_size*sizeof(char));
+        if(queue_entry_json.contain("fname")){
+            auto tmp_p = queue_entry_json.getString("fname").c_str();
+            auto tmp_size = queue_entry_json.getString("fname").size();
+            strncpy(qe->fname, tmp_p, tmp_size*sizeof(char));
+        }
+        if(queue_entry_json.contain("len")){
+            qe->len = queue_entry_json.getInt("len");
 
-        qe->len = queue_entry_json.getInt("len");
-        qe->cal_failed = queue_entry_json.getInt("cal_filed");
-        qe->trim_done = queue_entry_json.getInt("trim_done");
-        qe->was_fuzzed = queue_entry_json.getInt("was_fuzzed");
-        qe->passed_det = queue_entry_json.getInt("passed_det");
-        qe->has_new_cov = queue_entry_json.getInt("has_new_cov");
-        qe->favored = queue_entry_json.getInt("favored");
-        qe->fs_redundant = queue_entry_json.getInt("fs_redundant");
-        qe->exec_us = queue_entry_json.getLongLongInt("exec_us");
-        qe->handicap = queue_entry_json.getLongLongInt("handicap");
-        qe->depth = queue_entry_json.getLongLongInt("depth");
-        qe->distance = queue_entry_json.getDouble("distance");
+        }
+        if(queue_entry_json.contain("cal_filed")){
+            qe->cal_failed = queue_entry_json.getInt("cal_filed");
+        }
+
+        if(queue_entry_json.contain("trim_done")){
+            qe->trim_done = queue_entry_json.getInt("trim_done");
+        }
+
+        if(queue_entry_json.contain("was_fuzzed")){
+            qe->was_fuzzed = queue_entry_json.getInt("was_fuzzed");
+        }
+
+        if(queue_entry_json.contain("passed_det")){
+            qe->passed_det = queue_entry_json.getInt("passed_det");
+        }
+
+        if(queue_entry_json.contain("has_new_cov")){
+            qe->has_new_cov = queue_entry_json.getInt("has_new_cov");
+        }
+
+        if(queue_entry_json.contain("favored")){
+            qe->favored = queue_entry_json.getInt("favored");
+        }
+
+        if(queue_entry_json.contain("fs_redundant")){
+            qe->fs_redundant = queue_entry_json.getInt("fs_redundant");
+        }
+
+        if(queue_entry_json.contain("exec_us")){
+            qe->exec_us = queue_entry_json.getLongLongInt("exec_us");
+        }
+
+        if(queue_entry_json.contain("handicap")){
+            qe->handicap = queue_entry_json.getLongLongInt("handicap");
+        }
+
+        if(queue_entry_json.contain("depth")){
+            qe->depth = queue_entry_json.getLongLongInt("depth");
+        }
+
+        if(queue_entry_json.contain("distance")){
+            qe->distance = queue_entry_json.getDouble("distance");
+        }
+
+        if(queue_entry_json.contain("perf_score")){
+            qe->perf_score = queue_entry_json.getDouble("perf_score");
+        }
+
+        if(queue_entry_json.contain("user_set_perf_score")){
+            qe->user_set_perf_score = queue_entry_json.getDouble("user_set_perf_score");
+        }
+
     }
+
 
     static void queue_entry_from_json(case_info_queue_entry* qe, std::string queue_entry_str){
         mJson j;
@@ -243,10 +334,14 @@ public:
             res = "pause_fuzzer";
         }else if(op == RESUME_FUZZER){
             res = "resume_fuzzer";
-        }else if(op == REARRANGE_QUEUE){
-            res = "rearrange_queue";
-        }else if(op == REFRESH_QUEUE){
-            res = "refresh_queue";
+        }else if(op == READ_QUEUE){
+            res = "read_queue";
+        }else if(op == WRITE_QUEUE){
+            res = "write_queue";
+        }else if(op == READ_QUEUE_CUR){
+            res = "read_queue_cur";
+        }else if(op == WRITE_QUEUE_CUR){
+            res = "write_queue_cur";
         }
         return res;
     }
@@ -256,44 +351,21 @@ public:
             case_info->op = PAUSE_FUZZER;
         }else if(op_type == "resume_fuzzer"){
             case_info->op = RESUME_FUZZER;
-        }else if(op_type == "rearrange_queue"){
-            case_info->op = REARRANGE_QUEUE;
-        }else if(op_type == "refresh_queue"){
-            case_info->op = REFRESH_QUEUE;
+        }else if(op_type == "read_queue"){
+            case_info->op = READ_QUEUE;
+        }else if(op_type == "write_queue"){
+            case_info->op = WRITE_QUEUE;
+        }else if(op_type == "read_queue_cur"){
+            case_info->op = READ_QUEUE_CUR;
+        }else if(op_type == "write_queue_cur"){
+            case_info->op = WRITE_QUEUE_CUR;
         }
     }
 
-    static mJson to_json(CaseInfo* case_info){
-        mJson j;
-        std::string fuzzer_status = getFuzzerStatusString(case_info);
-        std::string op_type = getOpTypeString(case_info);
-        mJson queue = queue_to_json(case_info);
-        mJson arranged_idx = arranged_idx_to_json(case_info);
-        int queue_len = case_info->queue_len;
-        j.putString("status", fuzzer_status);
-        j.putString("op", op_type);
-        j.putJson("queue", queue);
-        j.putJson("arranged_idx", arranged_idx);
-        j.putInt("queue_len", queue_len);
-        return j;
+    static int get_queue_len(CaseInfo* case_info){
+        return case_info->queue_len;
     }
 
-    static void from_json(CaseInfo* case_info, mJson& case_info_json){
-        std::string op_type = case_info_json.getString("op");
-        mJson queue = case_info_json.getJson("queue");
-        mJson arranged_idx = case_info_json.getJson("arranged_idx");
-        int queue_len = case_info_json.getInt("queue_len");
-        setOpTypeByString(case_info, op_type);
-        queue_from_json(case_info, queue);
-        arranged_idx_from_json(case_info, arranged_idx);
-        case_info->queue_len = queue_len;
-    }
-
-    static void from_json(CaseInfo* case_info, const std::string& case_info_str){
-        mJson j;
-        j.loads(case_info_str);
-        from_json(case_info, j);
-    }
 
     //一些工具函数
     static void sleep_if_status_is_interrupt(CaseInfo* case_info, int try_times = MAX_TRY_TIMES, int sleep_interval_us  = SLEEP_INTERVAL_US){
@@ -332,25 +404,44 @@ public:
         case_info->op = PAUSE_FUZZER;
     }
 
-    static void op_refresh_queue(CaseInfo* case_info){
+    static void op_read_queue(CaseInfo* case_info){
         try{
             sleep_if_status_is_interrupt(case_info);
         }catch (std::runtime_error& e){
             return;
         }
         case_info->status = INTERRUPT;
-        case_info->op = REFRESH_QUEUE;
+        case_info->op = READ_QUEUE;
     }
 
-    static void op_rearrange_queue(CaseInfo* case_info, mJson arrangeIdx){
+    static void op_write_queue(CaseInfo* case_info){
         try{
             sleep_if_status_is_interrupt(case_info);
         }catch (std::runtime_error& e){
             return;
         }
-        arranged_idx_from_json(case_info, arrangeIdx);
         case_info->status = INTERRUPT;
-        case_info->op = REARRANGE_QUEUE;
+        case_info->op = WRITE_QUEUE;
+    }
+
+    static void op_read_queue_cur(CaseInfo* case_info){
+        try{
+            sleep_if_status_is_interrupt(case_info);
+        }catch (std::runtime_error& e){
+            return;
+        }
+        case_info->status = INTERRUPT;
+        case_info->op = READ_QUEUE_CUR;
+    }
+
+    static void op_write_queue_cur(CaseInfo* case_info){
+        try{
+            sleep_if_status_is_interrupt(case_info);
+        }catch (std::runtime_error& e){
+            return;
+        }
+        case_info->status = INTERRUPT;
+        case_info->op = WRITE_QUEUE_CUR;
     }
 
 };

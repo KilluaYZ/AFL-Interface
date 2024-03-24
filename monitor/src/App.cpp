@@ -15,8 +15,11 @@ void run(){
     router->route("POST", "/add", std::make_shared<AddFuzzerHandler>(objectMapper, fuzzer_manager));
     router->route("POST", "/pause", std::make_shared<PauseFuzzHandler>(objectMapper, fuzzer_manager));
     router->route("POST", "/resume", std::make_shared<ResumeFuzzHandler>(objectMapper, fuzzer_manager));
-    router->route("POST", "/list", std::make_shared<ListQueueHandler>(objectMapper, fuzzer_manager));
-    router->route("POST", "/arrange", std::make_shared<ArrangeQueueHandler>(objectMapper, fuzzer_manager));
+    router->route("POST", "/read/all", std::make_shared<ReadAllHandler>(objectMapper, fuzzer_manager));
+    router->route("POST", "/read/queue", std::make_shared<ReadQueueHandler>(objectMapper, fuzzer_manager));
+    router->route("POST", "/read/cur", std::make_shared<ReadQueueCurHandler>(objectMapper, fuzzer_manager));
+    router->route("POST", "/write/queue", std::make_shared<WriteQueueHandler>(objectMapper, fuzzer_manager));
+    router->route("POST", "/write/cur", std::make_shared<WriteQueueCurHandler>(objectMapper, fuzzer_manager));
 
     /* Create HTTP connection handler with router */
     auto connectionHandler = oatpp::web::server::HttpConnectionHandler::createShared(router);

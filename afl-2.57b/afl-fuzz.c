@@ -285,6 +285,11 @@ struct queue_entry {
   double distance;                    /* Distance to targets              */
 #endif // AFLGO_IMPL
 
+#if CODE_CHECK_IMPL
+  double perf_score;
+  double user_set_perf_score;
+#endif
+
   struct queue_entry *next,           /* Next element, if any             */
                      *next_100;       /* 100 elements ahead               */
 
@@ -369,6 +374,7 @@ enum {
 };
 
 #if CODE_CHECK_IMPL
+static u32 calculate_score(struct queue_entry* q);
 struct CaseInfo *case_info_mm;
 void init_case_info_mmap_link(){
     int fd;
@@ -381,10 +387,10 @@ void init_case_info_mmap_link(){
         FATAL("mmap failed");
     }
     close(fd);
-    case_info_mm->status = RUNNING;
+    init_case_info(case_info_mm);
 }
 
-void write_to_case_info_mm(){
+void write_queue_to_case_info_mm(){
     struct queue_entry* p = queue;
     int i = 0;
     while(p){
@@ -402,11 +408,60 @@ void write_to_case_info_mm(){
         tmp->handicap = p->handicap;
         tmp->depth = p->depth;
         tmp->distance = p->distance;
+
+        p->perf_score = calculate_score(p);
+        tmp->perf_score = p->perf_score;
+        tmp->user_set_perf_score = p->user_set_perf_score;
         i++;
         p = p->next;
     }
     case_info_mm->queue_len = i;
 }
+
+void load_queue_from_case_info_mm(){
+    struct queue_entry* p = queue;
+    for(int i = 0;i < case_info_mm->queue_len;i++) {
+        struct case_info_queue_entry* tmp = case_info_mm->queue+i;
+        p->favored = tmp->favored;
+        p->was_fuzzed = tmp->was_fuzzed;
+        p->distance = tmp->distance;
+        p->user_set_perf_score = tmp->user_set_perf_score;
+        p = p->next;
+    }
+}
+
+void write_queue_cur_to_case_info_mm() {
+    struct case_info_queue_entry* tmp = &case_info_mm->queue_cur;
+    struct queue_entry* p = queue_cur;
+
+    strcpy(tmp->fname, p->fname);
+    tmp->len = p->len;
+    tmp->cal_failed = p->cal_failed;
+    tmp->trim_done = p->trim_done;
+    tmp->was_fuzzed = p->was_fuzzed;
+    tmp->passed_det = p->passed_det;
+    tmp->has_new_cov = p->has_new_cov;
+    tmp->favored = p->favored;
+    tmp->fs_redundant = p->fs_redundant;
+    tmp->exec_us = p->exec_us;
+    tmp->handicap = p->handicap;
+    tmp->depth = p->depth;
+    tmp->distance = p->distance;
+
+    p->perf_score = calculate_score(p);
+    tmp->perf_score = p->perf_score;
+    tmp->user_set_perf_score = p->user_set_perf_score;
+}
+
+void load_queue_cur_from_case_info_mm() {
+    struct queue_entry* p = queue_cur;
+    struct case_info_queue_entry* tmp = &case_info_mm->queue_cur;
+    p->favored = tmp->favored;
+    p->was_fuzzed = tmp->was_fuzzed;
+    p->distance = tmp->distance;
+    p->user_set_perf_score = tmp->user_set_perf_score;
+}
+
 #endif
 
 
@@ -869,6 +924,9 @@ static void add_to_queue(u8* fname, u32 len, u8 passed_det) {
   q->len          = len;
   q->depth        = cur_depth + 1;
   q->passed_det   = passed_det;
+#if CODE_CHECK_IMPL
+  q->user_set_perf_score = -1.0;
+#endif
 
 #if AFLGO_IMPL
 
@@ -4821,16 +4879,23 @@ EXP_ST u8 common_fuzz_stuff(char** argv, u8* out_buf, u32 len) {
                 case_info_mm->status = PAUSE;
             }else if(case_info_mm->op == RESUME_FUZZER){
                 case_info_mm->status = READY;
-            }else if(case_info_mm->op == REFRESH_QUEUE){
-                write_to_case_info_mm();
+            }else if(case_info_mm->op == READ_QUEUE){
+                write_queue_to_case_info_mm();
                 case_info_mm->status = TASK_FINISHED;
-            }else if(case_info_mm->op == REARRANGE_QUEUE){
+            }else if(case_info_mm->op == WRITE_QUEUE){
+                load_queue_from_case_info_mm();
+                case_info_mm->status = TASK_FINISHED;
+            }else if(case_info_mm->op == READ_QUEUE_CUR) {
+                write_queue_cur_to_case_info_mm();
+                case_info_mm->status = TASK_FINISHED;
+            }else if(case_info_mm->op == WRITE_QUEUE_CUR) {
+                load_queue_cur_from_case_info_mm();
                 case_info_mm->status = TASK_FINISHED;
             }
             continue;
         }else if(case_info_mm->status == TASK_FINISHED){
             // once the task is finished, fuzzer will back to work immediatly
-            case_info_mm->status = READY;
+            case_info_mm->status = RUNNING;
             continue;
         }else if(case_info_mm->status == PAUSE){
             usleep(100);
@@ -5288,6 +5353,7 @@ static u8 fuzz_one(char** argv) {
     /* If we have any favored, non-fuzzed new arrivals in the queue,
        possibly skip to them at the expense of already-fuzzed or non-favored
        cases. */
+    // 如果队列里有感兴趣的，没有被fuzz过的种子，会跳过不感兴趣或者已经fuzz过的种子
 
     if ((queue_cur->was_fuzzed || !queue_cur->favored) &&
         UR(100) < SKIP_TO_NEW_PROB) return 1;
@@ -5297,13 +5363,15 @@ static u8 fuzz_one(char** argv) {
     /* Otherwise, still possibly skip non-favored cases, albeit less often.
        The odds of skipping stuff are higher for already-fuzzed inputs and
        lower for never-fuzzed entries. */
+    //否则，如果队列里没有感兴趣的种子，我们仍旧会以一定概率跳过那些已经被fuzz过的种子
 
     if (queue_cycle > 1 && !queue_cur->was_fuzzed) {
-
+    //种子没有被fuzz过，UR会生成100以内的随机数，SKIP_NFAV_NEW_PROB=75
+    //意味会有75%的概率跳过这类种子
       if (UR(100) < SKIP_NFAV_NEW_PROB) return 1;
 
     } else {
-
+    //如果种子被fuzz过，会有95%的概率跳过这类种子
       if (UR(100) < SKIP_NFAV_OLD_PROB) return 1;
 
     }
@@ -5402,6 +5470,7 @@ static u8 fuzz_one(char** argv) {
    * PERFORMANCE SCORE *
    *********************/
 
+  //当一个种子确定要被fuzz时才会计算它的perf_score，计算出的这个分数会影响他在havoc阶段被变异的数量
   orig_perf = perf_score = calculate_score(queue_cur);
 
   /* Skip right away if -d is given, if we have done deterministic fuzzing on
@@ -8478,6 +8547,10 @@ int main(int argc, char** argv) {
 
     if (stop_soon) break;
 
+    // 类似于将queue一整个遍历，然后在fuzz_one中，又以一定概率（最大不超过25%）fuzz一个种子，
+    // fuzz过程有多个阶段，包括flip, havoc, insert, arith等等，每个阶段都会生成很多我们感兴趣的种子
+    // 我们会将感兴趣的种子通过save_if_interesting函数存下来，而fuzz过程中的原始种子始终没有变，
+    // 即我们在fuzz_one这里输入进去了queue_cur,后面所有阶段的产生的种子都是从queue_cur变异得到的
     queue_cur = queue_cur->next;
     current_entry++;
 
